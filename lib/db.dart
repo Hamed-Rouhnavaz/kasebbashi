@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'customer.dart';
 import 'product.dart';
+import 'sale.dart';
 
 class AppDatabase {
   AppDatabase._();
@@ -29,6 +30,31 @@ class AppDatabase {
     )
   ''';
 
+  static const _salesTable = '''
+    CREATE TABLE sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER,
+      created_at INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      discount INTEGER NOT NULL DEFAULT 0,
+      paid INTEGER NOT NULL DEFAULT 0,
+      tracking_code TEXT,
+      note TEXT
+    )
+  ''';
+
+  static const _saleItemsTable = '''
+    CREATE TABLE sale_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sale_id INTEGER NOT NULL,
+      product_id INTEGER,
+      product_name TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      unit_price INTEGER NOT NULL,
+      unit_cost INTEGER NOT NULL
+    )
+  ''';
+
   Database? _db;
 
   Future<Database> get database async {
@@ -41,14 +67,20 @@ class AppDatabase {
     final path = p.join(dir, 'kasebbashi.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute(_productsTable);
         await db.execute(_customersTable);
+        await db.execute(_salesTable);
+        await db.execute(_saleItemsTable);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute(_customersTable);
+        }
+        if (oldVersion < 3) {
+          await db.execute(_salesTable);
+          await db.execute(_saleItemsTable);
         }
       },
     );
@@ -96,5 +128,99 @@ class AppDatabase {
   Future<void> deleteCustomer(int id) async {
     final db = await database;
     await db.delete('customers', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---------- فروش ----------
+  Future<List<Sale>> getSales() async {
+    final db = await database;
+    final saleRows = await db.rawQuery('''
+      SELECT s.*, c.name AS customer_name, c.instagram AS customer_instagram
+      FROM sales s
+      LEFT JOIN customers c ON c.id = s.customer_id
+      ORDER BY s.id DESC
+    ''');
+    final itemRows = await db.query('sale_items');
+    final itemsBySale = <int, List<SaleItem>>{};
+    for (final r in itemRows) {
+      itemsBySale
+          .putIfAbsent(r['sale_id'] as int, () => [])
+          .add(SaleItem.fromMap(r));
+    }
+    return saleRows
+        .map((r) => Sale.fromMap(r, itemsBySale[r['id'] as int] ?? []))
+        .toList();
+  }
+
+  Future<Sale?> getSale(int id) async {
+    final all = await getSales();
+    for (final s in all) {
+      if (s.id == id) return s;
+    }
+    return null;
+  }
+
+  /// فروش را ثبت می‌کند و موجودی کالاها را کم می‌کند
+  Future<void> createSale(Sale sale) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final saleId = await txn.insert('sales', sale.toMap());
+      for (final item in sale.items) {
+        await txn.insert('sale_items', item.toMap(saleId));
+        if (item.productId != null) {
+          await txn.rawUpdate(
+            'UPDATE products SET stock = stock - ? WHERE id = ?',
+            [item.quantity, item.productId],
+          );
+        }
+      }
+    });
+  }
+
+  /// وضعیت را عوض می‌کند. با لغو، موجودی برمی‌گردد؛ با برگرداندن از لغو، دوباره کم می‌شود.
+  Future<void> updateSaleStatus(Sale sale, String newStatus) async {
+    if (sale.status == newStatus) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.update('sales', {'status': newStatus},
+          where: 'id = ?', whereArgs: [sale.id]);
+      final wasCanceled = sale.status == SaleStatus.canceled;
+      final nowCanceled = newStatus == SaleStatus.canceled;
+      if (wasCanceled != nowCanceled) {
+        final sign = nowCanceled ? '+' : '-';
+        for (final item in sale.items) {
+          if (item.productId != null) {
+            await txn.rawUpdate(
+              'UPDATE products SET stock = stock $sign ? WHERE id = ?',
+              [item.quantity, item.productId],
+            );
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> updateSaleFields(int id, Map<String, Object?> values) async {
+    final db = await database;
+    await db.update('sales', values, where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// فروش را حذف می‌کند (اگر لغو نشده بود، موجودی برمی‌گردد)
+  Future<void> deleteSale(Sale sale) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      if (sale.status != SaleStatus.canceled) {
+        for (final item in sale.items) {
+          if (item.productId != null) {
+            await txn.rawUpdate(
+              'UPDATE products SET stock = stock + ? WHERE id = ?',
+              [item.quantity, item.productId],
+            );
+          }
+        }
+      }
+      await txn.delete('sale_items',
+          where: 'sale_id = ?', whereArgs: [sale.id]);
+      await txn.delete('sales', where: 'id = ?', whereArgs: [sale.id]);
+    });
   }
 }
