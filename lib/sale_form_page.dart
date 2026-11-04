@@ -4,6 +4,8 @@ import 'customer.dart';
 import 'db.dart';
 import 'format.dart';
 import 'product.dart';
+import 'product_thumb.dart';
+import 'quick_customer_sheet.dart';
 import 'sale.dart';
 import 'widgets.dart';
 
@@ -74,11 +76,20 @@ class _SaleFormPageState extends State<SaleFormPage> {
   }
 
   Future<void> _pickCustomer() async {
+    final primary = Theme.of(context).colorScheme.primary;
     final picked = await showModalBottomSheet<int>(
       context: context,
       builder: (ctx) => SafeArea(
         child: ListView(
           children: [
+            ListTile(
+              leading: Icon(Icons.person_add, color: primary),
+              title: Text(
+                'مشتری جدید',
+                style: TextStyle(color: primary, fontWeight: FontWeight.bold),
+              ),
+              onTap: () => Navigator.pop(ctx, -2),
+            ),
             ListTile(
               leading: const Icon(Icons.person_off_outlined),
               title: const Text('بدون مشتری'),
@@ -95,7 +106,19 @@ class _SaleFormPageState extends State<SaleFormPage> {
         ),
       ),
     );
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
+
+    if (picked == -2) {
+      final newId = await showQuickCustomerSheet(context);
+      if (newId == null) return;
+      final customers = await AppDatabase.instance.getCustomers();
+      if (!mounted) return;
+      setState(() {
+        _customers = customers;
+        _customerId = newId;
+      });
+      return;
+    }
     setState(() => _customerId = picked == -1 ? null : picked);
   }
 
@@ -114,6 +137,7 @@ class _SaleFormPageState extends State<SaleFormPage> {
           children: [
             for (final p in available)
               ListTile(
+                leading: ProductThumb(p.image),
                 title: Text(p.name),
                 subtitle: Text('${toman(p.salePrice)}  |  موجودی: ${p.stock}'),
                 onTap: () => Navigator.pop(ctx, p),
