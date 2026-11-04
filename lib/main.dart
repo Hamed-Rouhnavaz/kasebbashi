@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'products_page.dart';
+import 'home_page.dart';
 
 void main() {
   runApp(const KasebbashiApp());
@@ -23,7 +23,7 @@ class KasebbashiApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-      home: const ProductsPage(),
+      home: const HomePage(),
     );
   }
 }
