@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'backup_page.dart';
 import 'customers_page.dart';
 import 'products_page.dart';
+import 'reports_page.dart';
 import 'sales_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,6 +20,7 @@ class _HomePageState extends State<HomePage> {
     SalesPage(),
     ProductsPage(),
     CustomersPage(),
+    ReportsPage(),
     BackupPage(),
   ];
 
@@ -44,6 +46,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'مشتری‌ها',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'گزارش',
           ),
           NavigationDestination(
             icon: Icon(Icons.backup_outlined),
