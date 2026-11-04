@@ -45,6 +45,8 @@ dependencies:
   cross_file: ^0.3.5+5
   image_picker: ^1.2.4
   path_provider: ^2.1.6
+  local_auth: ^3.0.2
+  crypto: ^3.0.8
 
 dev_dependencies:
   flutter_test:

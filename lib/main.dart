@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'home_page.dart';
 import 'images.dart';
+import 'lock_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,9 @@ class KasebbashiApp extends StatelessWidget {
     return MaterialApp(
       title: 'کاسب‌باشی',
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
+      builder: (context, child) =>
+          AppLockGate(child: child ?? const SizedBox.shrink()),
       locale: const Locale('fa'),
       supportedLocales: const [Locale('fa')],
       localizationsDelegates: const [

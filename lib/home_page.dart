@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'backup_page.dart';
 import 'customers_page.dart';
 import 'products_page.dart';
 import 'reports_page.dart';
 import 'sales_page.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,7 +21,7 @@ class _HomePageState extends State<HomePage> {
     ProductsPage(),
     CustomersPage(),
     ReportsPage(),
-    BackupPage(),
+    SettingsPage(),
   ];
 
   @override
@@ -53,9 +53,9 @@ class _HomePageState extends State<HomePage> {
             label: 'گزارش',
           ),
           NavigationDestination(
-            icon: Icon(Icons.backup_outlined),
-            selectedIcon: Icon(Icons.backup),
-            label: 'پشتیبان',
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'تنظیمات',
           ),
         ],
       ),
