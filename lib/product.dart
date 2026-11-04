@@ -5,6 +5,8 @@ class Product {
   final int costPrice;
   final int stock;
   final String note;
+  final String image;
+  final String category;
 
   const Product({
     this.id,
@@ -13,6 +15,8 @@ class Product {
     required this.costPrice,
     required this.stock,
     this.note = '',
+    this.image = '',
+    this.category = '',
   });
 
   Map<String, Object?> toMap() => {
@@ -22,6 +26,8 @@ class Product {
         'cost_price': costPrice,
         'stock': stock,
         'note': note,
+        'image': image,
+        'category': category,
       };
 
   factory Product.fromMap(Map<String, Object?> m) => Product(
@@ -31,5 +37,7 @@ class Product {
         costPrice: m['cost_price'] as int,
         stock: m['stock'] as int,
         note: (m['note'] as String?) ?? '',
+        image: (m['image'] as String?) ?? '',
+        category: (m['category'] as String?) ?? '',
       );
 }

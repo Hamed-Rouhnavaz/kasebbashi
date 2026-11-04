@@ -16,7 +16,9 @@ class AppDatabase {
       sale_price INTEGER NOT NULL,
       cost_price INTEGER NOT NULL,
       stock INTEGER NOT NULL,
-      note TEXT
+      note TEXT,
+      image TEXT,
+      category TEXT
     )
   ''';
 
@@ -67,7 +69,7 @@ class AppDatabase {
     final path = p.join(dir, 'kasebbashi.db');
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute(_productsTable);
         await db.execute(_customersTable);
@@ -81,6 +83,10 @@ class AppDatabase {
         if (oldVersion < 3) {
           await db.execute(_salesTable);
           await db.execute(_saleItemsTable);
+        }
+        if (oldVersion < 4) {
+          await db.execute('ALTER TABLE products ADD COLUMN image TEXT');
+          await db.execute('ALTER TABLE products ADD COLUMN category TEXT');
         }
       },
     );

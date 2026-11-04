@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'db.dart';
 import 'format.dart';
+import 'images.dart';
 import 'product.dart';
 import 'product_form_page.dart';
+import 'product_thumb.dart';
 
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
@@ -17,6 +19,15 @@ class _ProductsPageState extends State<ProductsPage> {
 
   List<Product> _products = [];
   bool _loading = true;
+  String _filter = ''; // خالی یعنی همه
+
+  List<String> get _categories {
+    final set = <String>{};
+    for (final p in _products) {
+      if (p.category.isNotEmpty) set.add(p.category);
+    }
+    return set.toList()..sort();
+  }
 
   @override
   void initState() {
@@ -30,6 +41,7 @@ class _ProductsPageState extends State<ProductsPage> {
     setState(() {
       _products = items;
       _loading = false;
+      if (_filter.isNotEmpty && !_categories.contains(_filter)) _filter = '';
     });
   }
 
@@ -60,12 +72,18 @@ class _ProductsPageState extends State<ProductsPage> {
     );
     if (ok == true) {
       await AppDatabase.instance.deleteProduct(product.id!);
+      await ImageStore.delete(product.image);
       _load();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final categories = _categories;
+    final visible = _filter.isEmpty
+        ? _products
+        : _products.where((p) => p.category == _filter).toList();
+
     return Scaffold(
       appBar: AppBar(title: const Text('محصولات')),
       floatingActionButton: FloatingActionButton.extended(
@@ -80,27 +98,73 @@ class _ProductsPageState extends State<ProductsPage> {
                   child: Text('هنوز محصولی ثبت نکرده‌اید.\nدکمه پایین را بزنید.',
                       textAlign: TextAlign.center),
                 )
-              : ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 90),
-                  itemCount: _products.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final p = _products[i];
-                    final low = p.stock <= lowStockLimit;
-                    return ListTile(
-                      title: Text(p.name),
-                      subtitle: Text(
-                        '${toman(p.salePrice)}  |  موجودی: ${p.stock}'
-                        '${low ? '  (کم است!)' : ''}',
-                        style: TextStyle(color: low ? Colors.red : null),
+              : Column(
+                  children: [
+                    if (categories.isNotEmpty)
+                      SizedBox(
+                        height: 56,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: ChoiceChip(
+                                label: const Text('همه'),
+                                selected: _filter.isEmpty,
+                                onSelected: (_) =>
+                                    setState(() => _filter = ''),
+                              ),
+                            ),
+                            for (final c in categories)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: ChoiceChip(
+                                  label: Text(c),
+                                  selected: _filter == c,
+                                  onSelected: (_) =>
+                                      setState(() => _filter = c),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _delete(p),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 90),
+                        itemCount: visible.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (context, i) {
+                          final p = visible[i];
+                          final low = p.stock <= lowStockLimit;
+                          return ListTile(
+                            leading: ProductThumb(p.image),
+                            title: Text(p.name),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (p.category.isNotEmpty)
+                                  Text(p.category,
+                                      style: const TextStyle(fontSize: 12)),
+                                Text(
+                                  '${toman(p.salePrice)}  |  موجودی: ${p.stock}'
+                                  '${low ? '  (کم است!)' : ''}',
+                                  style: TextStyle(
+                                      color: low ? Colors.red : null),
+                                ),
+                              ],
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () => _delete(p),
+                            ),
+                            onTap: () => _openForm(p),
+                          );
+                        },
                       ),
-                      onTap: () => _openForm(p),
-                    );
-                  },
+                    ),
+                  ],
                 ),
     );
   }
