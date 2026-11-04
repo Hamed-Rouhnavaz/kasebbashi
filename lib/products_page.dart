@@ -6,6 +6,8 @@ import 'images.dart';
 import 'product.dart';
 import 'product_form_page.dart';
 import 'product_thumb.dart';
+import 'search_box.dart';
+import 'text_utils.dart';
 
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
@@ -20,6 +22,7 @@ class _ProductsPageState extends State<ProductsPage> {
   List<Product> _products = [];
   bool _loading = true;
   String _filter = ''; // خالی یعنی همه
+  String _query = '';
 
   List<String> get _categories {
     final set = <String>{};
@@ -80,9 +83,12 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     final categories = _categories;
-    final visible = _filter.isEmpty
-        ? _products
-        : _products.where((p) => p.category == _filter).toList();
+    final q = normalizeText(_query);
+    final visible = _products.where((p) {
+      if (_filter.isNotEmpty && p.category != _filter) return false;
+      if (q.isEmpty) return true;
+      return normalizeText('${p.name} ${p.category}').contains(q);
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('محصولات')),
@@ -100,6 +106,10 @@ class _ProductsPageState extends State<ProductsPage> {
                 )
               : Column(
                   children: [
+                    SearchBox(
+                      hint: 'جست‌وجوی محصول',
+                      onChanged: (v) => setState(() => _query = v),
+                    ),
                     if (categories.isNotEmpty)
                       SizedBox(
                         height: 56,

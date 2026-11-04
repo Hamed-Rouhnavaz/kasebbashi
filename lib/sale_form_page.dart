@@ -4,7 +4,7 @@ import 'customer.dart';
 import 'db.dart';
 import 'format.dart';
 import 'product.dart';
-import 'product_thumb.dart';
+import 'product_picker.dart';
 import 'quick_customer_sheet.dart';
 import 'sale.dart';
 import 'widgets.dart';
@@ -130,22 +130,7 @@ class _SaleFormPageState extends State<SaleFormPage> {
       _msg('محصولی با موجودی برای افزودن وجود ندارد');
       return;
     }
-    final picked = await showModalBottomSheet<Product>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: ListView(
-          children: [
-            for (final p in available)
-              ListTile(
-                leading: ProductThumb(p.image),
-                title: Text(p.name),
-                subtitle: Text('${toman(p.salePrice)}  |  موجودی: ${p.stock}'),
-                onTap: () => Navigator.pop(ctx, p),
-              ),
-          ],
-        ),
-      ),
-    );
+    final picked = await pickProduct(context, available);
     if (picked != null) setState(() => _lines.add(_Line(picked, 1)));
   }
 
