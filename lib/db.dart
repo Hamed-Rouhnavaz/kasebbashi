@@ -176,22 +176,32 @@ class AppDatabase {
     });
   }
 
-  /// وضعیت را عوض می‌کند. با لغو، موجودی برمی‌گردد؛ با برگرداندن از لغو، دوباره کم می‌شود.
+  /// وضعیت را عوض می‌کند. وضعیت قبلی و اقلام از خود دیتابیس خوانده می‌شود.
+  /// با لغو، موجودی برمی‌گردد؛ با برگرداندن از لغو، دوباره کم می‌شود.
   Future<void> updateSaleStatus(Sale sale, String newStatus) async {
-    if (sale.status == newStatus) return;
     final db = await database;
     await db.transaction((txn) async {
+      final rows = await txn.query('sales',
+          columns: ['status'], where: 'id = ?', whereArgs: [sale.id]);
+      if (rows.isEmpty) return;
+      final oldStatus = rows.first['status'] as String;
+      if (oldStatus == newStatus) return;
+
       await txn.update('sales', {'status': newStatus},
           where: 'id = ?', whereArgs: [sale.id]);
-      final wasCanceled = sale.status == SaleStatus.canceled;
+
+      final wasCanceled = oldStatus == SaleStatus.canceled;
       final nowCanceled = newStatus == SaleStatus.canceled;
       if (wasCanceled != nowCanceled) {
         final sign = nowCanceled ? '+' : '-';
-        for (final item in sale.items) {
-          if (item.productId != null) {
+        final items = await txn
+            .query('sale_items', where: 'sale_id = ?', whereArgs: [sale.id]);
+        for (final r in items) {
+          final productId = r['product_id'] as int?;
+          if (productId != null) {
             await txn.rawUpdate(
               'UPDATE products SET stock = stock $sign ? WHERE id = ?',
-              [item.quantity, item.productId],
+              [r['quantity'] as int, productId],
             );
           }
         }
@@ -208,12 +218,19 @@ class AppDatabase {
   Future<void> deleteSale(Sale sale) async {
     final db = await database;
     await db.transaction((txn) async {
-      if (sale.status != SaleStatus.canceled) {
-        for (final item in sale.items) {
-          if (item.productId != null) {
+      final rows = await txn.query('sales',
+          columns: ['status'], where: 'id = ?', whereArgs: [sale.id]);
+      if (rows.isEmpty) return;
+      final status = rows.first['status'] as String;
+      final items = await txn
+          .query('sale_items', where: 'sale_id = ?', whereArgs: [sale.id]);
+      if (status != SaleStatus.canceled) {
+        for (final r in items) {
+          final productId = r['product_id'] as int?;
+          if (productId != null) {
             await txn.rawUpdate(
               'UPDATE products SET stock = stock + ? WHERE id = ?',
-              [item.quantity, item.productId],
+              [r['quantity'] as int, productId],
             );
           }
         }

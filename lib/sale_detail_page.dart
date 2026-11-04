@@ -18,6 +18,7 @@ class SaleDetailPage extends StatefulWidget {
 class _SaleDetailPageState extends State<SaleDetailPage> {
   late Sale _sale;
   late final TextEditingController _tracking;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -43,8 +44,14 @@ class _SaleDetailPageState extends State<SaleDetailPage> {
   }
 
   Future<void> _changeStatus(String status) async {
-    await AppDatabase.instance.updateSaleStatus(_sale, status);
-    await _reload();
+    if (_busy) return;
+    _busy = true;
+    try {
+      await AppDatabase.instance.updateSaleStatus(_sale, status);
+      await _reload();
+    } finally {
+      _busy = false;
+    }
   }
 
   Future<void> _saveTracking() async {
