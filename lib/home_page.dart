@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'backup_page.dart';
 import 'customers_page.dart';
 import 'products_page.dart';
 import 'sales_page.dart';
@@ -14,7 +15,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _index = 0;
 
-  static const _pages = [SalesPage(), ProductsPage(), CustomersPage()];
+  static const _pages = [
+    SalesPage(),
+    ProductsPage(),
+    CustomersPage(),
+    BackupPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +44,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'مشتری‌ها',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.backup_outlined),
+            selectedIcon: Icon(Icons.backup),
+            label: 'پشتیبان',
           ),
         ],
       ),

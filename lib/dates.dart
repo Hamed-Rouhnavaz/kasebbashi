@@ -9,3 +9,6 @@ String shamsiDate(DateTime d) {
 
 String shamsiDateTime(DateTime d) =>
     '${shamsiDate(d)}  ${_two(d.hour)}:${_two(d.minute)}';
+
+String fileStamp(DateTime d) =>
+    '${shamsiDate(d).replaceAll('/', '-')}_${_two(d.hour)}${_two(d.minute)}';
