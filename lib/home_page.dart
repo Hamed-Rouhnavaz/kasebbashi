@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'customers_page.dart';
+import 'dashboard_page.dart';
 import 'products_page.dart';
-import 'reports_page.dart';
 import 'sales_page.dart';
 import 'settings_page.dart';
 
@@ -17,10 +17,10 @@ class _HomePageState extends State<HomePage> {
   int _index = 0;
 
   static const _pages = [
+    DashboardPage(),
     SalesPage(),
     ProductsPage(),
     CustomersPage(),
-    ReportsPage(),
     SettingsPage(),
   ];
 
@@ -32,6 +32,11 @@ class _HomePageState extends State<HomePage> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'داشبورد',
+          ),
           NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
             selectedIcon: Icon(Icons.receipt_long),
@@ -46,11 +51,6 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'مشتری‌ها',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'گزارش',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
