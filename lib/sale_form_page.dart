@@ -125,7 +125,7 @@ class _SaleFormPageState extends State<SaleFormPage> {
   Future<void> _addProduct() async {
     final used = _lines.map((l) => l.product.id).toSet();
     final available =
-        _products.where((p) => p.stock > 0 && !used.contains(p.id)).toList();
+        _products.where((p) => p.active && p.stock > 0 && !used.contains(p.id)).toList();
     if (available.isEmpty) {
       _msg('محصولی با موجودی برای افزودن وجود ندارد');
       return;

@@ -18,7 +18,9 @@ class AppDatabase {
       stock INTEGER NOT NULL,
       note TEXT,
       image TEXT,
-      category TEXT
+      category TEXT,
+      low_stock INTEGER NOT NULL DEFAULT 3,
+      active INTEGER NOT NULL DEFAULT 1
     )
   ''';
 
@@ -69,7 +71,7 @@ class AppDatabase {
     final path = p.join(dir, 'kasebbashi.db');
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute(_productsTable);
         await db.execute(_customersTable);
@@ -87,6 +89,12 @@ class AppDatabase {
         if (oldVersion < 4) {
           await db.execute('ALTER TABLE products ADD COLUMN image TEXT');
           await db.execute('ALTER TABLE products ADD COLUMN category TEXT');
+        }
+        if (oldVersion < 5) {
+          await db.execute(
+              'ALTER TABLE products ADD COLUMN low_stock INTEGER NOT NULL DEFAULT 3');
+          await db.execute(
+              'ALTER TABLE products ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
         }
       },
     );

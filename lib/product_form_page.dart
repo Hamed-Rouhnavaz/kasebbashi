@@ -22,11 +22,13 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _cost;
   late final TextEditingController _stock;
   late final TextEditingController _category;
+  late final TextEditingController _lowStock;
   late final TextEditingController _note;
 
   String _image = '';
   String? _sessionImage; // عکسی که در همین باز شدن فرم گرفته شده
   bool _saved = false;
+  bool _active = true;
   List<String> _categories = [];
 
   @override
@@ -38,6 +40,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _cost = TextEditingController(text: p?.costPrice.toString() ?? '');
     _stock = TextEditingController(text: p?.stock.toString() ?? '');
     _category = TextEditingController(text: p?.category ?? '');
+    _lowStock = TextEditingController(text: (p?.lowStock ?? 3).toString());
+    _active = p?.active ?? true;
     _note = TextEditingController(text: p?.note ?? '');
     _image = p?.image ?? '';
     _loadCategories();
@@ -62,6 +66,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _cost.dispose();
     _stock.dispose();
     _category.dispose();
+    _lowStock.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -112,6 +117,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
       note: _note.text.trim(),
       image: _image,
       category: _category.text.trim(),
+      lowStock: parseNumber(_lowStock.text) ?? 3,
+      active: _active,
     );
     await AppDatabase.instance.saveProduct(product);
     if (original.isNotEmpty && original != _image) {
@@ -207,6 +214,26 @@ class _ProductFormPageState extends State<ProductFormPage> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'موجودی'),
               validator: _requiredNumber,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _lowStock,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'هشدار کمبود',
+                helperText:
+                    'وقتی موجودی از این عدد کمتر شد «کم است» نشان داده شود (۰ = بدون هشدار)',
+                helperMaxLines: 2,
+              ),
+              validator: _requiredNumber,
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('محصول فعال (قابل فروش)'),
+              subtitle: const Text(
+                  'محصول غیرفعال در «فروش جدید» نشان داده نمی‌شود'),
+              value: _active,
+              onChanged: (v) => setState(() => _active = v),
             ),
             const SizedBox(height: 12),
             TextFormField(
