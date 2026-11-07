@@ -5,15 +5,15 @@ import 'sale.dart';
 Color statusColor(String status) {
   switch (status) {
     case SaleStatus.preparing:
-      return Colors.orange;
+      return const Color(0xFFD08A1E); // کهربایی
     case SaleStatus.shipped:
-      return Colors.blue;
+      return const Color(0xFF3F74B8); // آبی
     case SaleStatus.delivered:
-      return Colors.green;
+      return const Color(0xFF2E8B67); // زمرد
     case SaleStatus.canceled:
-      return Colors.grey;
+      return const Color(0xFF8C928F); // خاکستری
     default:
-      return Colors.grey;
+      return const Color(0xFF8C928F);
   }
 }
 

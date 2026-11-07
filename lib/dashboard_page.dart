@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
+import 'app_theme.dart';
 import 'charts.dart';
 import 'db.dart';
 import 'format.dart';
@@ -92,20 +93,28 @@ class _DashboardPageState extends State<DashboardPage> {
     return items;
   }
 
+  void _openReports() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ReportsPage()));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final titleStyle = Theme.of(context).textTheme.titleMedium;
-    final primary = Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
+    final titleStyle = Theme.of(context)
+        .textTheme
+        .titleMedium
+        ?.copyWith(fontWeight: FontWeight.w700);
 
     final appBar = AppBar(
-      title: const Text('داشبورد'),
+      title: const Text('کاسب‌باشی'),
       actions: [
         IconButton(
-          icon: const Icon(Icons.insights),
+          icon: const Icon(Icons.insights_outlined),
           tooltip: 'گزارش‌ها',
-          onPressed: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const ReportsPage())),
+          onPressed: _openReports,
         ),
+        const SizedBox(width: 4),
       ],
     );
 
@@ -145,7 +154,8 @@ class _DashboardPageState extends State<DashboardPage> {
     final stats = <String, _ProductStat>{};
     for (final s in monthActive) {
       for (final i in s.items) {
-        stats.putIfAbsent(i.productName, () => _ProductStat(i.productName))
+        stats
+            .putIfAbsent(i.productName, () => _ProductStat(i.productName))
             .qty += i.quantity;
       }
     }
@@ -163,48 +173,37 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       appBar: appBar,
       body: ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.today,
-                  color: Colors.teal,
-                  title: 'فروش امروز',
-                  value: toman(todayRevenue),
-                  caption: '${todaySales.length} فروش',
-                ),
-              ),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.calendar_month,
-                  color: Colors.indigo,
-                  title: 'فروش این ماه',
-                  value: toman(monthRevenue),
-                  caption: '${monthActive.length} فروش',
-                ),
-              ),
+          _HeroCard(
+            title: 'فروش این ماه',
+            amount: toman(monthRevenue),
+            stats: [
+              ('سود این ماه', toman(monthProfit)),
+              ('فروش امروز', toman(todayRevenue)),
+              ('تعداد فروش ماه', '${monthActive.length}'),
             ],
           ),
+          const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.trending_up,
-                  color: Colors.green,
-                  title: 'سود این ماه',
-                  value: toman(monthProfit),
-                  caption: 'بر اساس قیمت خرید',
-                ),
-              ),
               Expanded(
                 child: _StatTile(
                   icon: Icons.account_balance_wallet_outlined,
-                  color: Colors.red,
+                  color: AppColors.wine,
                   title: 'طلب‌ها',
                   value: toman(totalDebt),
                   caption: 'از مشتری‌ها',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.inventory_2_outlined,
+                  color: AppColors.gold,
+                  title: 'کم‌موجودی',
+                  value: '${attention.length} کالا',
+                  caption: 'نیاز به تأمین',
                 ),
               ),
             ],
@@ -212,12 +211,12 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 8),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('نمودار فروش', style: titleStyle),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     children: [
@@ -238,12 +237,12 @@ class _DashboardPageState extends State<DashboardPage> {
                     items: _monthly
                         ? _monthBars(active, jNow)
                         : _weekBars(active, today),
-                    color: primary,
+                    color: scheme.secondary,
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'م = میلیون تومان  |  ه = هزار تومان',
-                    style: TextStyle(fontSize: 10, color: Colors.grey),
+                    style: TextStyle(fontSize: 10, color: scheme.outline),
                   ),
                 ],
               ),
@@ -251,12 +250,12 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('وضعیت فروش‌های این ماه', style: titleStyle),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   if (monthAll.isEmpty)
                     const Text('این ماه هنوز فروشی ثبت نشده است.')
                   else
@@ -292,8 +291,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
-                                        child: Text(
-                                            SaleStatus.label(SaleStatus.all[i])),
+                                        child: Text(SaleStatus.label(
+                                            SaleStatus.all[i])),
                                       ),
                                       Text('${statusCounts[i]}'),
                                     ],
@@ -310,18 +309,18 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('پرفروش‌ترین کالاهای این ماه', style: titleStyle),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   if (top.isEmpty)
                     const Text('اطلاعاتی برای نمایش نیست.')
                   else
                     for (final p in top)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -331,10 +330,12 @@ class _DashboardPageState extends State<DashboardPage> {
                                 Text('${p.qty} عدد'),
                               ],
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 6),
                             LinearProgressIndicator(
                               value: p.qty / maxQty,
                               minHeight: 8,
+                              color: scheme.secondary,
+                              backgroundColor: scheme.outlineVariant,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ],
@@ -346,7 +347,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -357,13 +358,13 @@ class _DashboardPageState extends State<DashboardPage> {
                   else
                     for (final p in attention.take(5))
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 3),
                         child: Row(
                           children: [
                             Expanded(child: Text(p.name)),
                             Text(
                               p.stock <= 0 ? 'تمام شد' : 'موجودی: ${p.stock}',
-                              style: const TextStyle(color: Colors.red),
+                              style: const TextStyle(color: AppColors.wine),
                             ),
                           ],
                         ),
@@ -386,12 +387,106 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(height: 8),
           FilledButton.tonalIcon(
-            onPressed: () => Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const ReportsPage())),
-            icon: const Icon(Icons.insights),
+            onPressed: _openReports,
+            icon: const Icon(Icons.insights_outlined),
             label: const Text('گزارش کامل و بازه زمانی'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// کارت اصلی تیره با اعداد طلایی
+class _HeroCard extends StatelessWidget {
+  final String title;
+  final String amount;
+  final List<(String, String)> stats;
+
+  const _HeroCard({
+    required this.title,
+    required this.amount,
+    required this.stats,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [AppColors.heroTop, AppColors.heroBottom],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.heroGold,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              amount,
+              style: const TextStyle(
+                color: AppColors.heroGold,
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
+          Container(height: 1, color: Colors.white12),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              for (final s in stats)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.$1,
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 11),
+                      ),
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          s.$2,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -415,22 +510,23 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: color.withValues(alpha: 0.15),
-                  child: Icon(icon, size: 16, color: color),
-                ),
-                const SizedBox(width: 8),
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 6),
                 Expanded(
-                  child: Text(title, style: const TextStyle(fontSize: 12)),
+                  child: Text(
+                    title,
+                    style: TextStyle(fontSize: 12, color: scheme.outline),
+                  ),
                 ),
               ],
             ),
@@ -440,16 +536,14 @@ class _StatTile extends StatelessWidget {
               alignment: AlignmentDirectional.centerStart,
               child: Text(
                 value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
             const SizedBox(height: 2),
-            Text(caption,
-                style: const TextStyle(fontSize: 10, color: Colors.grey)),
+            Text(caption, style: TextStyle(fontSize: 10, color: scheme.outline)),
           ],
         ),
       ),
