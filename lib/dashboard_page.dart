@@ -411,14 +411,15 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hero = Theme.of(context).extension<AppHero>()!;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [AppColors.heroTop, AppColors.heroBottom],
+          colors: [hero.top, hero.bottom],
         ),
       ),
       child: Column(
@@ -429,8 +430,8 @@ class _HeroCard extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.heroGold,
+                decoration: BoxDecoration(
+                  color: hero.accent,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -447,8 +448,8 @@ class _HeroCard extends StatelessWidget {
             alignment: AlignmentDirectional.centerStart,
             child: Text(
               amount,
-              style: const TextStyle(
-                color: AppColors.heroGold,
+              style: TextStyle(
+                color: hero.accent,
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
               ),
