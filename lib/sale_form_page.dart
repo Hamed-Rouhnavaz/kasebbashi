@@ -11,8 +11,14 @@ import 'widgets.dart';
 
 class _Line {
   final Product product;
+  final ProductVariant? variant;
   int qty;
-  _Line(this.product, this.qty);
+  _Line(this.product, this.variant, this.qty);
+
+  int get stock => variant?.stock ?? product.stock;
+  String get name =>
+      variant == null ? product.name : '${product.name} (${variant!.label})';
+  String get key => lineKey(product.id, variant?.id);
 }
 
 class SaleFormPage extends StatefulWidget {
@@ -123,15 +129,16 @@ class _SaleFormPageState extends State<SaleFormPage> {
   }
 
   Future<void> _addProduct() async {
-    final used = _lines.map((l) => l.product.id).toSet();
-    final available =
-        _products.where((p) => p.active && p.stock > 0 && !used.contains(p.id)).toList();
+    final usedKeys = _lines.map((l) => l.key).toSet();
+    final available = _products.where((p) => p.active && p.stock > 0).toList();
     if (available.isEmpty) {
       _msg('محصولی با موجودی برای افزودن وجود ندارد');
       return;
     }
-    final picked = await pickProduct(context, available);
-    if (picked != null) setState(() => _lines.add(_Line(picked, 1)));
+    final picked = await pickProduct(context, available, usedKeys);
+    if (picked != null) {
+      setState(() => _lines.add(_Line(picked.product, picked.variant, 1)));
+    }
   }
 
   Future<void> _save() async {
@@ -158,7 +165,8 @@ class _SaleFormPageState extends State<SaleFormPage> {
         for (final l in _lines)
           SaleItem(
             productId: l.product.id,
-            productName: l.product.name,
+            variantId: l.variant?.id,
+            productName: l.name,
             quantity: l.qty,
             unitPrice: l.product.salePrice,
             unitCost: l.product.costPrice,
@@ -195,11 +203,11 @@ class _SaleFormPageState extends State<SaleFormPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(l.product.name,
+                          Text(l.name,
                               style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 4),
                           Text('${toman(l.product.salePrice)}  |  '
-                              'موجودی: ${l.product.stock}'),
+                              'موجودی: ${l.stock}'),
                           Row(
                             children: [
                               IconButton(
@@ -211,7 +219,7 @@ class _SaleFormPageState extends State<SaleFormPage> {
                               Text('${l.qty}'),
                               IconButton(
                                 icon: const Icon(Icons.add_circle_outline),
-                                onPressed: l.qty < l.product.stock
+                                onPressed: l.qty < l.stock
                                     ? () => setState(() => l.qty++)
                                     : null,
                               ),

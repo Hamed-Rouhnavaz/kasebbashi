@@ -18,6 +18,7 @@ class SaleStatus {
 
 class SaleItem {
   final int? productId;
+  final int? variantId;
   final String productName;
   final int quantity;
   final int unitPrice;
@@ -25,6 +26,7 @@ class SaleItem {
 
   const SaleItem({
     this.productId,
+    this.variantId,
     required this.productName,
     required this.quantity,
     required this.unitPrice,
@@ -36,6 +38,7 @@ class SaleItem {
   Map<String, Object?> toMap(int saleId) => {
         'sale_id': saleId,
         'product_id': productId,
+        'variant_id': variantId,
         'product_name': productName,
         'quantity': quantity,
         'unit_price': unitPrice,
@@ -44,6 +47,7 @@ class SaleItem {
 
   factory SaleItem.fromMap(Map<String, Object?> m) => SaleItem(
         productId: m['product_id'] as int?,
+        variantId: m['variant_id'] as int?,
         productName: m['product_name'] as String,
         quantity: m['quantity'] as int,
         unitPrice: m['unit_price'] as int,

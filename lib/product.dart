@@ -1,3 +1,41 @@
+class ProductVariant {
+  final int? id;
+  final int productId;
+  final String size;
+  final String color;
+  final int stock;
+
+  const ProductVariant({
+    this.id,
+    this.productId = 0,
+    this.size = '',
+    this.color = '',
+    required this.stock,
+  });
+
+  /// مثلاً «سایز 30 | آبی»
+  String get label => [
+        if (size.isNotEmpty) 'سایز $size',
+        if (color.isNotEmpty) color,
+      ].join(' | ');
+
+  Map<String, Object?> toMap(int productId) => {
+        if (id != null) 'id': id,
+        'product_id': productId,
+        'size': size,
+        'color': color,
+        'stock': stock,
+      };
+
+  factory ProductVariant.fromMap(Map<String, Object?> m) => ProductVariant(
+        id: m['id'] as int,
+        productId: m['product_id'] as int,
+        size: (m['size'] as String?) ?? '',
+        color: (m['color'] as String?) ?? '',
+        stock: m['stock'] as int,
+      );
+}
+
 class Product {
   final int? id;
   final String name;
@@ -9,6 +47,7 @@ class Product {
   final String category;
   final int lowStock;
   final bool active;
+  final List<ProductVariant> variants;
 
   const Product({
     this.id,
@@ -21,7 +60,10 @@ class Product {
     this.category = '',
     this.lowStock = 3,
     this.active = true,
+    this.variants = const [],
   });
+
+  bool get hasVariants => variants.isNotEmpty;
 
   Product copyWith({bool? active}) => Product(
         id: id,
@@ -34,6 +76,7 @@ class Product {
         category: category,
         lowStock: lowStock,
         active: active ?? this.active,
+        variants: variants,
       );
 
   Map<String, Object?> toMap() => {
@@ -49,7 +92,11 @@ class Product {
         'active': active ? 1 : 0,
       };
 
-  factory Product.fromMap(Map<String, Object?> m) => Product(
+  factory Product.fromMap(
+    Map<String, Object?> m, [
+    List<ProductVariant> variants = const [],
+  ]) =>
+      Product(
         id: m['id'] as int,
         name: m['name'] as String,
         salePrice: m['sale_price'] as int,
@@ -60,5 +107,6 @@ class Product {
         category: (m['category'] as String?) ?? '',
         lowStock: (m['low_stock'] as int?) ?? 3,
         active: ((m['active'] as int?) ?? 1) == 1,
+        variants: variants,
       );
 }

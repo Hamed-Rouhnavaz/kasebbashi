@@ -8,7 +8,13 @@ import 'dates.dart';
 import 'db.dart';
 import 'images.dart';
 
-const _tables = ['products', 'customers', 'sales', 'sale_items'];
+const _tables = [
+  'products',
+  'product_variants',
+  'customers',
+  'sales',
+  'sale_items',
+];
 const _backupFormat = 1;
 
 class BackupData {
@@ -81,6 +87,10 @@ class BackupService {
     final tables = <String, List<Map<String, Object?>>>{};
     for (final t in _tables) {
       final raw = decoded[t];
+      if (raw == null && t == 'product_variants') {
+        tables[t] = [];
+        continue;
+      }
       if (raw is! List) {
         throw const FormatException('فایل پشتیبان ناقص است');
       }

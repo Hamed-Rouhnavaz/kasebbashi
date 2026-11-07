@@ -238,7 +238,7 @@ class _ProductsPageState extends State<ProductsPage> {
                                           ),
                                         Text(
                                           '${toman(p.salePrice)}  |  '
-                                          'موجودی: ${p.stock}'
+                                          'موجودی: ${p.stock}${p.variants.isEmpty ? '' : '  (${p.variants.length} گونه)'}'
                                           '${out ? '  (تمام شد)' : low ? '  (کم است!)' : ''}',
                                           style: TextStyle(
                                               color: (out || low)

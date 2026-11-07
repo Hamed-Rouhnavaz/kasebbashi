@@ -24,6 +24,16 @@ class AppDatabase {
     )
   ''';
 
+  static const _variantsTable = '''
+    CREATE TABLE product_variants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      size TEXT,
+      color TEXT,
+      stock INTEGER NOT NULL DEFAULT 0
+    )
+  ''';
+
   static const _customersTable = '''
     CREATE TABLE customers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,6 +62,7 @@ class AppDatabase {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sale_id INTEGER NOT NULL,
       product_id INTEGER,
+      variant_id INTEGER,
       product_name TEXT NOT NULL,
       quantity INTEGER NOT NULL,
       unit_price INTEGER NOT NULL,
@@ -71,9 +82,10 @@ class AppDatabase {
     final path = p.join(dir, 'kasebbashi.db');
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, version) async {
         await db.execute(_productsTable);
+        await db.execute(_variantsTable);
         await db.execute(_customersTable);
         await db.execute(_salesTable);
         await db.execute(_saleItemsTable);
@@ -96,6 +108,14 @@ class AppDatabase {
           await db.execute(
               'ALTER TABLE products ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
         }
+        if (oldVersion < 6) {
+          await db.execute(_variantsTable);
+          // اگر از نسخه ۳ به بالا ارتقا می‌دهیم، جدول اقلام فروش ستون جدید را می‌خواهد
+          if (oldVersion >= 3) {
+            await db.execute(
+                'ALTER TABLE sale_items ADD COLUMN variant_id INTEGER');
+          }
+        }
       },
     );
   }
@@ -104,22 +124,67 @@ class AppDatabase {
   Future<List<Product>> getProducts() async {
     final db = await database;
     final rows = await db.query('products', orderBy: 'id DESC');
-    return rows.map(Product.fromMap).toList();
+    final varRows = await db.query('product_variants', orderBy: 'id ASC');
+    final byProduct = <int, List<ProductVariant>>{};
+    for (final r in varRows) {
+      final v = ProductVariant.fromMap(r);
+      byProduct.putIfAbsent(v.productId, () => []).add(v);
+    }
+    return rows
+        .map((r) => Product.fromMap(r, byProduct[r['id'] as int] ?? const []))
+        .toList();
   }
 
+  /// محصول و گونه‌هایش را ذخیره می‌کند.
+  /// اگر گونه دارد، موجودی کل از جمع موجودی گونه‌ها حساب می‌شود.
   Future<void> saveProduct(Product product) async {
     final db = await database;
-    if (product.id == null) {
-      await db.insert('products', product.toMap());
-    } else {
-      await db.update('products', product.toMap(),
-          where: 'id = ?', whereArgs: [product.id]);
-    }
+    await db.transaction((txn) async {
+      final total = product.variants.isEmpty
+          ? product.stock
+          : product.variants.fold<int>(0, (a, v) => a + v.stock);
+      final map = product.toMap();
+      map['stock'] = total;
+
+      final int id;
+      if (product.id == null) {
+        id = await txn.insert('products', map);
+      } else {
+        id = product.id!;
+        await txn.update('products', map, where: 'id = ?', whereArgs: [id]);
+      }
+
+      final keepIds = <int>[];
+      for (final v in product.variants) {
+        if (v.id != null) {
+          keepIds.add(v.id!);
+          await txn.update('product_variants', v.toMap(id),
+              where: 'id = ?', whereArgs: [v.id]);
+        } else {
+          keepIds.add(await txn.insert('product_variants', v.toMap(id)));
+        }
+      }
+      if (keepIds.isEmpty) {
+        await txn.delete('product_variants',
+            where: 'product_id = ?', whereArgs: [id]);
+      } else {
+        final marks = List.filled(keepIds.length, '?').join(',');
+        await txn.delete(
+          'product_variants',
+          where: 'product_id = ? AND id NOT IN ($marks)',
+          whereArgs: [id, ...keepIds],
+        );
+      }
+    });
   }
 
   Future<void> deleteProduct(int id) async {
     final db = await database;
-    await db.delete('products', where: 'id = ?', whereArgs: [id]);
+    await db.transaction((txn) async {
+      await txn.delete('product_variants',
+          where: 'product_id = ?', whereArgs: [id]);
+      await txn.delete('products', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   // ---------- مشتری‌ها ----------
@@ -173,19 +238,48 @@ class AppDatabase {
     return null;
   }
 
-  /// فروش را ثبت می‌کند و موجودی کالاها را کم می‌کند
+  /// موجودی را به اندازه delta تغییر می‌دهد.
+  /// اگر کالا گونه دارد، موجودی همان گونه عوض می‌شود و موجودی کل از جمع گونه‌ها دوباره حساب می‌شود.
+  Future<void> _adjustStock(
+    Transaction txn, {
+    required int? productId,
+    required int? variantId,
+    required int delta,
+  }) async {
+    if (productId == null) return;
+    if (variantId != null) {
+      await txn.rawUpdate(
+        'UPDATE product_variants SET stock = stock + ? WHERE id = ?',
+        [delta, variantId],
+      );
+      await txn.rawUpdate(
+        'UPDATE products SET stock = '
+        '(SELECT COALESCE(SUM(stock), 0) FROM product_variants WHERE product_id = ?) '
+        'WHERE id = ? AND EXISTS '
+        '(SELECT 1 FROM product_variants WHERE product_id = ?)',
+        [productId, productId, productId],
+      );
+    } else {
+      await txn.rawUpdate(
+        'UPDATE products SET stock = stock + ? WHERE id = ?',
+        [delta, productId],
+      );
+    }
+  }
+
+  /// فروش را ثبت می‌کند و موجودی کالاها (یا گونه‌ها) را کم می‌کند
   Future<void> createSale(Sale sale) async {
     final db = await database;
     await db.transaction((txn) async {
       final saleId = await txn.insert('sales', sale.toMap());
       for (final item in sale.items) {
         await txn.insert('sale_items', item.toMap(saleId));
-        if (item.productId != null) {
-          await txn.rawUpdate(
-            'UPDATE products SET stock = stock - ? WHERE id = ?',
-            [item.quantity, item.productId],
-          );
-        }
+        await _adjustStock(
+          txn,
+          productId: item.productId,
+          variantId: item.variantId,
+          delta: -item.quantity,
+        );
       }
     });
   }
@@ -207,17 +301,16 @@ class AppDatabase {
       final wasCanceled = oldStatus == SaleStatus.canceled;
       final nowCanceled = newStatus == SaleStatus.canceled;
       if (wasCanceled != nowCanceled) {
-        final sign = nowCanceled ? '+' : '-';
         final items = await txn
             .query('sale_items', where: 'sale_id = ?', whereArgs: [sale.id]);
         for (final r in items) {
-          final productId = r['product_id'] as int?;
-          if (productId != null) {
-            await txn.rawUpdate(
-              'UPDATE products SET stock = stock $sign ? WHERE id = ?',
-              [r['quantity'] as int, productId],
-            );
-          }
+          final q = r['quantity'] as int;
+          await _adjustStock(
+            txn,
+            productId: r['product_id'] as int?,
+            variantId: r['variant_id'] as int?,
+            delta: nowCanceled ? q : -q,
+          );
         }
       }
     });
@@ -240,13 +333,12 @@ class AppDatabase {
           .query('sale_items', where: 'sale_id = ?', whereArgs: [sale.id]);
       if (status != SaleStatus.canceled) {
         for (final r in items) {
-          final productId = r['product_id'] as int?;
-          if (productId != null) {
-            await txn.rawUpdate(
-              'UPDATE products SET stock = stock + ? WHERE id = ?',
-              [r['quantity'] as int, productId],
-            );
-          }
+          await _adjustStock(
+            txn,
+            productId: r['product_id'] as int?,
+            variantId: r['variant_id'] as int?,
+            delta: r['quantity'] as int,
+          );
         }
       }
       await txn.delete('sale_items',
