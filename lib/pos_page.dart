@@ -249,7 +249,7 @@ class _PosPageState extends State<PosPage> {
                   ),
                   FilledButton(
                     onPressed: _continue,
-                    child: const Text('ادامه'),
+                    child: const Text('ثبت سفارش'),
                   ),
                 ],
               ),

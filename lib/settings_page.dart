@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'appearance_page.dart';
 import 'backup_page.dart';
+import 'build_info.dart';
 import 'lock_settings_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -37,6 +38,18 @@ class SettingsPage extends StatelessWidget {
             subtitle: const Text('ذخیره اطلاعات در فایل'),
             trailing: const Icon(Icons.chevron_left),
             onTap: () => open(const BackupPage()),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Text(
+                'کاسب‌باشی  •  شماره ساخت: $kBuild',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+            ),
           ),
         ],
       ),

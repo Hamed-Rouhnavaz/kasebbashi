@@ -41,7 +41,7 @@ jobs:
       - name: Build APK (retry on network errors)
         run: |
           for i in 1 2 3 4 5 6; do
-            if flutter build apk --release; then
+            if flutter build apk --release --dart-define=BUILD_NUMBER=${{ github.run_number }}; then
               exit 0
             fi
             echo "Attempt $i failed. Waiting $((i * 60)) seconds..."
