@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'db.dart';
 import 'format.dart';
 import 'images.dart';
+import 'number_input.dart';
 import 'product.dart';
 import 'product_thumb.dart';
 import 'text_utils.dart';
@@ -58,8 +59,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
     super.initState();
     final p = widget.product;
     _name = TextEditingController(text: p?.name ?? '');
-    _sale = TextEditingController(text: p?.salePrice.toString() ?? '');
-    _cost = TextEditingController(text: p?.costPrice.toString() ?? '');
+    _sale = TextEditingController(
+        text: p == null ? '' : groupInt(p.salePrice));
+    _cost = TextEditingController(
+        text: p == null ? '' : groupInt(p.costPrice));
     _stock = TextEditingController(text: p?.stock.toString() ?? '');
     _category = TextEditingController(text: p?.category ?? '');
     _lowStock = TextEditingController(text: (p?.lowStock ?? 3).toString());
@@ -366,6 +369,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
             TextFormField(
               controller: _sale,
               keyboardType: TextInputType.number,
+              inputFormatters: [ThousandsInputFormatter()],
               decoration:
                   const InputDecoration(labelText: 'قیمت فروش (تومان)'),
               validator: _requiredNumber,
@@ -374,6 +378,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
             TextFormField(
               controller: _cost,
               keyboardType: TextInputType.number,
+              inputFormatters: [ThousandsInputFormatter()],
               decoration:
                   const InputDecoration(labelText: 'قیمت خرید (تومان)'),
               validator: _requiredNumber,

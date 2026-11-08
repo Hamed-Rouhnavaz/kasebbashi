@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_theme.dart';
 import 'customer.dart';
 import 'customer_form_page.dart';
 import 'customer_stats.dart';
@@ -45,32 +46,9 @@ class _CustomersPageState extends State<CustomersPage> {
     if (changed == true) _load();
   }
 
-  Future<void> _delete(Customer customer) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('حذف مشتری'),
-        content: Text('«${customer.name}» حذف شود؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('انصراف'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      await AppDatabase.instance.deleteCustomer(customer.id!);
-      _load();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final q = normalizeText(_query);
     final visible = _customers.where((c) {
       if (q.isEmpty) return true;
@@ -78,18 +56,55 @@ class _CustomersPageState extends State<CustomersPage> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('مشتری‌ها')),
+      appBar: AppBar(
+        title: const Text('مشتری‌ها'),
+        actions: [
+          if (_customers.isNotEmpty)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 16),
+              child: Center(
+                child: Text(
+                  '${_customers.length} مشتری',
+                  style: TextStyle(fontSize: 13, color: scheme.outline),
+                ),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(),
-        icon: const Icon(Icons.person_add),
+        icon: const Icon(Icons.person_add_alt_1),
         label: const Text('مشتری جدید'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _customers.isEmpty
-              ? const Center(
-                  child: Text('هنوز مشتری‌ای ثبت نکرده‌اید.\nدکمه پایین را بزنید.',
-                      textAlign: TextAlign.center),
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.people_outline,
+                            size: 64, color: scheme.outline),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'هنوز مشتری‌ای ثبت نکرده‌اید',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'با دکمه پایین اولین مشتری‌تان را اضافه کنید. '
+                          'می‌توانید هنگام ثبت فروش هم مشتری جدید بسازید.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: scheme.outline),
+                        ),
+                      ],
+                    ),
+                  ),
                 )
               : Column(
                   children: [
@@ -100,54 +115,161 @@ class _CustomersPageState extends State<CustomersPage> {
                     Expanded(
                       child: visible.isEmpty
                           ? const Center(child: Text('مشتری‌ای پیدا نشد'))
-                          : ListView.separated(
-                              padding: const EdgeInsets.only(bottom: 90),
+                          : ListView.builder(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 4, 16, 100),
                               itemCount: visible.length,
-                              separatorBuilder: (_, _) =>
-                                  const Divider(height: 1),
-                              itemBuilder: (context, i) {
-                                final c = visible[i];
-                                final stat = _stats[c.id];
-                                final details = [
-                                  if (c.instagram.isNotEmpty) '@${c.instagram}',
-                                  if (c.phone.isNotEmpty) c.phone,
-                                ].join('  |  ');
-                                return ListTile(
-                                  leading: const CircleAvatar(
-                                      child: Icon(Icons.person)),
-                                  title: Text(c.name),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      if (details.isNotEmpty) Text(details),
-                                      Text(
-                                        stat == null
-                                            ? 'هنوز خریدی نداشته'
-                                            : '${stat.count} خرید  |  '
-                                                'جمع: ${toman(stat.total)}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: stat == null
-                                              ? null
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: IconButton(
-                                    icon: const Icon(Icons.delete_outline),
-                                    onPressed: () => _delete(c),
-                                  ),
-                                  onTap: () => _openForm(c),
-                                );
-                              },
+                              itemBuilder: (context, i) => _CustomerCard(
+                                customer: visible[i],
+                                stat: _stats[visible[i].id],
+                                onTap: () => _openForm(visible[i]),
+                              ),
                             ),
                     ),
                   ],
                 ),
+    );
+  }
+}
+
+class _CustomerCard extends StatelessWidget {
+  final Customer customer;
+  final CustomerStat? stat;
+  final VoidCallback onTap;
+
+  const _CustomerCard({
+    required this.customer,
+    required this.stat,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final c = customer;
+    final initial = c.name.trim().isEmpty
+        ? '؟'
+        : String.fromCharCode(c.name.trim().runes.first);
+    final hasContact = c.instagram.isNotEmpty || c.phone.isNotEmpty;
+    final debt = stat?.debt ?? 0;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      c.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (hasContact) ...[
+                      const SizedBox(height: 3),
+                      Wrap(
+                        spacing: 12,
+                        children: [
+                          if (c.instagram.isNotEmpty)
+                            _IconText(Icons.alternate_email, c.instagram),
+                          if (c.phone.isNotEmpty)
+                            _IconText(Icons.phone_outlined, c.phone),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        if (stat == null)
+                          _Pill('هنوز خریدی نداشته', scheme.outline)
+                        else ...[
+                          _Pill('${stat!.count} خرید', scheme.secondary),
+                          _Pill('جمع: ${toman(stat!.total)}', scheme.primary),
+                        ],
+                        if (debt > 0)
+                          _Pill('مانده: ${toman(debt)}', AppColors.wine),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_left, color: scheme.outline),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IconText extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _IconText(this.icon, this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.outline;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 12, color: color)),
+      ],
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _Pill(this.text, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'dates.dart';
 import 'db.dart';
 import 'format.dart';
+import 'number_input.dart';
 import 'sale.dart';
 import 'widgets.dart';
 
@@ -68,14 +69,29 @@ class _SaleDetailPageState extends State<SaleDetailPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('ثبت پرداخت جدید'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: 'مبلغ (تومان)',
-            helperText: 'مانده: ${toman(_sale.remaining)}',
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              inputFormatters: [ThousandsInputFormatter()],
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'مبلغ (تومان)',
+                helperText: 'مانده: ${toman(_sale.remaining)}',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed: () => controller.text = groupInt(_sale.remaining),
+                icon: const Icon(Icons.done_all),
+                label: const Text('تسویه کامل مانده'),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(

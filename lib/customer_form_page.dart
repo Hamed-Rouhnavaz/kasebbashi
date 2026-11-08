@@ -53,11 +53,45 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     Navigator.of(context).pop(true);
   }
 
+  Future<void> _delete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف مشتری'),
+        content: Text('«${widget.customer!.name}» حذف شود؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('انصراف'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await AppDatabase.instance.deleteCustomer(widget.customer!.id!);
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final editing = widget.customer != null;
     return Scaffold(
-      appBar: AppBar(title: Text(editing ? 'ویرایش مشتری' : 'مشتری جدید')),
+      appBar: AppBar(
+        title: Text(editing ? 'ویرایش مشتری' : 'مشتری جدید'),
+        actions: [
+          if (editing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'حذف مشتری',
+              onPressed: _delete,
+            ),
+        ],
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -65,7 +99,10 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
           children: [
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'نام مشتری'),
+              decoration: const InputDecoration(
+                labelText: 'نام مشتری',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'نام را وارد کنید' : null,
             ),
@@ -75,19 +112,25 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
               decoration: const InputDecoration(
                 labelText: 'آیدی اینستاگرام (اختیاری)',
                 hintText: 'مثلاً ali_shop',
+                prefixIcon: Icon(Icons.alternate_email),
               ),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
-              decoration:
-                  const InputDecoration(labelText: 'شماره تماس (اختیاری)'),
+              decoration: const InputDecoration(
+                labelText: 'شماره تماس (اختیاری)',
+                prefixIcon: Icon(Icons.phone_outlined),
+              ),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _address,
-              decoration: const InputDecoration(labelText: 'آدرس (اختیاری)'),
+              decoration: const InputDecoration(
+                labelText: 'آدرس (اختیاری)',
+                prefixIcon: Icon(Icons.location_on_outlined),
+              ),
               maxLines: 3,
             ),
             const SizedBox(height: 24),

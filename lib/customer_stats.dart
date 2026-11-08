@@ -4,11 +4,12 @@ import 'sale.dart';
 class CustomerStat {
   final int count;
   final int total;
-  const CustomerStat(this.count, this.total);
+  final int debt;
+  const CustomerStat(this.count, this.total, this.debt);
 }
 
 extension CustomerStats on AppDatabase {
-  /// تعداد خرید و جمع خرید هر مشتری (فروش‌های لغوشده حساب نمی‌شوند)
+  /// تعداد خرید، جمع خرید و مانده هر مشتری (فروش‌های لغوشده حساب نمی‌شوند)
   Future<Map<int, CustomerStat>> customerStats() async {
     final sales = await getSales();
     final map = <int, CustomerStat>{};
@@ -16,7 +17,11 @@ extension CustomerStats on AppDatabase {
       final id = s.customerId;
       if (id == null || s.status == SaleStatus.canceled) continue;
       final old = map[id];
-      map[id] = CustomerStat((old?.count ?? 0) + 1, (old?.total ?? 0) + s.total);
+      map[id] = CustomerStat(
+        (old?.count ?? 0) + 1,
+        (old?.total ?? 0) + s.total,
+        (old?.debt ?? 0) + (s.remaining > 0 ? s.remaining : 0),
+      );
     }
     return map;
   }

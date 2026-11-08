@@ -5,7 +5,7 @@ import 'db.dart';
 import 'format.dart';
 import 'sale.dart';
 import 'sale_detail_page.dart';
-import 'sale_form_page.dart';
+import 'catalog_page.dart';
 import 'search_box.dart';
 import 'status_style.dart';
 import 'text_utils.dart';
@@ -43,7 +43,7 @@ class _SalesPageState extends State<SalesPage> {
 
   Future<void> _openForm() async {
     final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const SaleFormPage()),
+      MaterialPageRoute(builder: (_) => const CatalogPage()),
     );
     if (changed == true) _load();
   }
