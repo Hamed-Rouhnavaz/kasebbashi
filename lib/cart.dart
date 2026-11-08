@@ -37,8 +37,9 @@ class Cart extends ChangeNotifier {
   int qtyOf(Product p, [ProductVariant? v]) => _find(p, v)?.qty ?? 0;
 
   /// جمع تعداد همه گونه‌های یک محصول در سبد
-  int qtyOfProduct(Product p) =>
-      lines.where((l) => l.product.id == p.id).fold<int>(0, (a, l) => a + l.qty);
+  int qtyOfProduct(Product p) => lines
+      .where((l) => l.product.id == p.id)
+      .fold<int>(0, (a, l) => a + l.qty);
 
   void add(Product p, [ProductVariant? v]) {
     final line = _find(p, v);
@@ -65,4 +66,36 @@ class Cart extends ChangeNotifier {
     lines.remove(line);
     notifyListeners();
   }
+
+  void clear() {
+    lines.clear();
+    notifyListeners();
+  }
+
+  /// بعد از بارگذاری دوباره محصولات، اقلام سبد را با آخرین موجودی‌ها هماهنگ می‌کند
+  void refresh(List<Product> products) {
+    final byId = {for (final p in products) p.id: p};
+    final kept = <CartLine>[];
+    for (final l in lines) {
+      final p = byId[l.product.id];
+      if (p == null || !p.active) continue;
+      ProductVariant? v;
+      if (l.variant != null) {
+        for (final x in p.variants) {
+          if (x.id == l.variant!.id) v = x;
+        }
+        if (v == null) continue;
+      }
+      final stock = v?.stock ?? p.stock;
+      if (stock <= 0) continue;
+      kept.add(CartLine(p, v, l.qty > stock ? stock : l.qty));
+    }
+    lines
+      ..clear()
+      ..addAll(kept);
+    notifyListeners();
+  }
 }
+
+/// سبد خرید مشترک بین تب‌ها؛ با رفتن به تب‌های دیگر خالی نمی‌شود
+final Cart cart = Cart();

@@ -5,7 +5,6 @@ import 'db.dart';
 import 'format.dart';
 import 'sale.dart';
 import 'sale_detail_page.dart';
-import 'catalog_page.dart';
 import 'search_box.dart';
 import 'status_style.dart';
 import 'text_utils.dart';
@@ -39,13 +38,6 @@ class _SalesPageState extends State<SalesPage> {
       _sales = items;
       _loading = false;
     });
-  }
-
-  Future<void> _openForm() async {
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const CatalogPage()),
-    );
-    if (changed == true) _load();
   }
 
   Future<void> _openDetail(Sale sale) async {
@@ -97,18 +89,18 @@ class _SalesPageState extends State<SalesPage> {
         _sales.where((s) => _matches(s, _filter) && _matchesQuery(s)).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('فروش‌ها')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openForm,
-        icon: const Icon(Icons.add_shopping_cart),
-        label: const Text('فروش جدید'),
-      ),
+      appBar: AppBar(title: const Text('تاریخچه فروش')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _sales.isEmpty
               ? const Center(
-                  child: Text('هنوز فروشی ثبت نکرده‌اید.\nدکمه پایین را بزنید.',
-                      textAlign: TextAlign.center),
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Text(
+                      'هنوز فروشی ثبت نکرده‌اید.\nاز تب فروش، کالا را انتخاب و ثبت کنید.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 )
               : Column(
                   children: [
@@ -134,7 +126,7 @@ class _SalesPageState extends State<SalesPage> {
                       child: visible.isEmpty
                           ? const Center(child: Text('فروشی پیدا نشد'))
                           : ListView.separated(
-                              padding: const EdgeInsets.only(bottom: 90),
+                              padding: const EdgeInsets.only(bottom: 24),
                               itemCount: visible.length,
                               separatorBuilder: (_, _) =>
                                   const Divider(height: 1),

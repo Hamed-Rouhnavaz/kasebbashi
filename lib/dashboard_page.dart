@@ -9,6 +9,7 @@ import 'inventory_page.dart';
 import 'jalali_utils.dart';
 import 'product.dart';
 import 'reports_page.dart';
+import 'settings_page.dart';
 import 'sale.dart';
 import 'status_style.dart';
 
@@ -110,9 +111,11 @@ class _DashboardPageState extends State<DashboardPage> {
       title: const Text('کاسب‌باشی'),
       actions: [
         IconButton(
-          icon: const Icon(Icons.insights_outlined),
-          tooltip: 'گزارش‌ها',
-          onPressed: _openReports,
+          icon: const Icon(Icons.settings_outlined),
+          tooltip: 'تنظیمات',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SettingsPage()),
+          ),
         ),
         const SizedBox(width: 4),
       ],
