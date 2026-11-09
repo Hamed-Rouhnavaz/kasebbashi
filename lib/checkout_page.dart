@@ -238,7 +238,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 16),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.add_shopping_cart),
+                  label: const Text('افزودن کالای بیشتر'),
+                ),
+              ),
+              const SizedBox(height: 8),
               Text('مشتری', style: titleStyle),
               const SizedBox(height: 8),
               Card(
